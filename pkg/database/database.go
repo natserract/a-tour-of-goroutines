@@ -3,25 +3,34 @@ package database
 import (
 	"context"
 	"fmt"
+	"goroutines/config"
 	"goroutines/pkg/env"
 	"log/slog"
 
+	"github.com/Masterminds/squirrel"
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 )
 
-// NewPGXPool is a PostgreSQL connection pool for pgx.
-//
-// Usage:
-// pgPool := database.NewPGXPool(context.Background(), "", &PGXStdLogger{Logger: slog.Default()}, tracelog.LogLevelInfo, tracer)
-// defer pgPool.Close() // Close any remaining connections before shutting down your application.
-//
-// Instead of passing a configuration explicitly with a connString,
-// you might use PG environment variables such as the following to configure the database:
-// PGDATABASE, PGHOST, PGPORT, PGUSER, PGPASSWORD, PGCONNECT_TIMEOUT, etc.
-// Reference: https://www.postgresql.org/docs/current/libpq-envars.html
-func NewPGXPool(ctx context.Context, connString string, logger tracelog.Logger) (*pgxpool.Pool, error) {
-	conf, err := pgxpool.ParseConfig(connString) // Using environment variables instead of a connection string.
+type DB struct {
+	*pgxpool.Pool
+	QueryBuilder *squirrel.StatementBuilderType
+	url          string
+}
+
+func New(ctx context.Context, config *config.DB) (*DB, error) {
+	pgUrl := `postgres://%s:%s@%s:%d/%s?%s`
+	pgUrl = fmt.Sprintf(pgUrl,
+		config.Username,
+		config.Pass,
+		config.Host,
+		config.Port,
+		config.Name,
+		config.Params,
+	)
+
+	conf, err := pgxpool.ParseConfig(pgUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +38,9 @@ func NewPGXPool(ctx context.Context, connString string, logger tracelog.Logger) 
 	// Only show on development mode
 	if !env.IsProduction() {
 		conf.ConnConfig.Tracer = &tracelog.TraceLog{
-			Logger:   logger,
+			Logger: &PGXStdLogger{
+				slog.Default(),
+			},
 			LogLevel: tracelog.LogLevelInfo,
 		}
 	}
@@ -43,37 +54,26 @@ func NewPGXPool(ctx context.Context, connString string, logger tracelog.Logger) 
 		return nil, fmt.Errorf("pgx connection error: %w", err)
 	}
 
-	fmt.Printf("Successfully connected to database %s %v", connString, "\n")
-	return pool, nil
-
-}
-
-// PGXStdLogger prints pgx logs to the standard logger.
-// os.Stderr by default.
-type PGXStdLogger struct {
-	Logger *slog.Logger
-}
-
-func (l *PGXStdLogger) Log(ctx context.Context, level tracelog.LogLevel, msg string, data map[string]any) {
-	attrs := make([]slog.Attr, 0, len(data)+1)
-	attrs = append(attrs, slog.String("pgx_level", level.String()))
-	for k, v := range data {
-		attrs = append(attrs, slog.Any(k, v))
+	err = pool.Ping(ctx)
+	if err != nil {
+		return nil, err
 	}
-	l.Logger.LogAttrs(ctx, slogLevel(level), msg, attrs...)
+
+	psql := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	return &DB{
+		pool,
+		&psql,
+		pgUrl,
+	}, nil
 }
 
-// slogLevel translates pgx log level to slog log level.
-func slogLevel(level tracelog.LogLevel) slog.Level {
-	switch level {
-	case tracelog.LogLevelTrace, tracelog.LogLevelDebug:
-		return slog.LevelDebug
-	case tracelog.LogLevelInfo:
-		return slog.LevelInfo
-	case tracelog.LogLevelWarn:
-		return slog.LevelWarn
-	default:
-		// If tracelog.LogLevelError, tracelog.LogLevelNone, or any other unknown level, use slog.LevelError.
-		return slog.LevelError
-	}
+// ErrorCode returns the error code of the given error
+func (db *DB) ErrorCode(err error) string {
+	pgErr := err.(*pgconn.PgError)
+	return pgErr.Code
+}
+
+// Close closes the database connection
+func (db *DB) Close() {
+	db.Pool.Close()
 }

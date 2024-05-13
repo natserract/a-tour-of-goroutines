@@ -7,7 +7,6 @@ import (
 	"goroutines/config"
 	"goroutines/pkg/database"
 	"goroutines/pkg/env"
-	"log/slog"
 	"net/http"
 	"os"
 
@@ -24,29 +23,24 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg := config.GetConfig()
+	cfg, err := config.New()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to load config: %v\n", err)
+		os.Exit(1)
+	}
 
 	// Shared ctx
 	ctx := context.Background()
 
 	// Connect to the database
-	pgUrl := `postgres://%s:%s@%s:%d/%s?%s`
-	pgUrl = fmt.Sprintf(pgUrl,
-		cfg.DBUsername,
-		cfg.DBPass,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-		cfg.DBParams,
-	)
-	pool, err := database.NewPGXPool(ctx, pgUrl, &database.PGXStdLogger{
-		Logger: slog.Default(),
-	})
+	db, err := database.New(ctx, cfg.DB)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer pool.Close()
+	defer db.Close()
+
+	fmt.Printf("Successfully connected to database %v %s", cfg.DB, "\n")
 
 	// Disable debug mode in production
 	if env.IsProduction() {
@@ -54,7 +48,7 @@ func main() {
 	}
 
 	// Check reachability
-	if _, err = pool.Exec(ctx, `SELECT 1`); err != nil {
+	if _, err = db.Exec(ctx, `SELECT 1`); err != nil {
 		errMsg := fmt.Errorf("pool.Exec() error: %v", err)
 		fmt.Println(errMsg) // or handle the error message in some other way
 	}
@@ -63,17 +57,17 @@ func main() {
 	router := gin.New()
 
 	// Register routes
-	routes.RegisterRouter(ctx, pool, router)
+	routes.RegisterRouter(ctx, db.Pool, router)
 
 	// Prepare server
-	serveAddr := ":" + fmt.Sprint(cfg.AppPort)
+	serveAddr := ":" + fmt.Sprint(cfg.App.Port)
 	server := &http.Server{
 		Addr:    serveAddr,
 		Handler: router,
 	}
 
 	// Start http server
-	fmt.Printf("Serving on http://localhost:%s\n", fmt.Sprint(cfg.AppPort))
+	fmt.Printf("Serving on http://localhost:%s\n", fmt.Sprint(cfg.App.Port))
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("HTTP server error: %s\n", err)
 	}
