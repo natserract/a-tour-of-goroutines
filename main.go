@@ -57,7 +57,7 @@ func main() {
 	router := gin.New()
 
 	// Register routes
-	routes.RegisterRouter(ctx, db.Pool, router)
+	routes.RegisterRouter(ctx, db, router)
 
 	// Prepare server
 	serveAddr := ":" + fmt.Sprint(cfg.App.Port)

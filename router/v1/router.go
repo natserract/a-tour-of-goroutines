@@ -2,9 +2,9 @@ package v1
 
 import (
 	"context"
+	"goroutines/pkg/database"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type V1Router interface {
@@ -15,9 +15,9 @@ type v1Router struct {
 	Product *ProductRouter
 }
 
-func NewV1Router(ctx context.Context, pool *pgxpool.Pool) *v1Router {
+func NewV1Router(ctx context.Context, db *database.DB) *v1Router {
 	return &v1Router{
-		Product: NewProductRouter(ctx, pool),
+		Product: NewProductRouter(ctx, db),
 	}
 }
 

@@ -2,14 +2,14 @@ package repository
 
 import (
 	"context"
-	"goroutines/internal/product"
+	domain "goroutines/internal/product"
 	"goroutines/pkg/database"
 
 	"github.com/jackc/pgx/v5"
 )
 
 type ProductRepository interface {
-	Persist(ctx context.Context, p *product.Product, tx pgx.Tx) (*product.Product, error)
+	Persist(ctx context.Context, p *domain.Product, tx pgx.Tx) (*domain.Product, error)
 }
 
 type productRepository struct {
@@ -23,7 +23,7 @@ func NewProductRepository(db *database.DB) ProductRepository {
 }
 
 // CreateProduct creates a new product record in the database
-func (pr *productRepository) Persist(ctx context.Context, p *product.Product, tx pgx.Tx) (*product.Product, error) {
+func (pr *productRepository) Persist(ctx context.Context, p *domain.Product, tx pgx.Tx) (*domain.Product, error) {
 	query := pr.db.QueryBuilder.Insert("products").
 		Columns("id", "name", "sku", "category", "image_url", "notes", "price", "stock", "location", "is_available", "created_at").
 		Values(

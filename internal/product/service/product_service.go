@@ -2,24 +2,42 @@ package service
 
 import (
 	"context"
+	"fmt"
+	categoryRepository "goroutines/internal/category/repository"
 	"goroutines/internal/product"
 	"goroutines/internal/product/repository"
+	"goroutines/internal/product/request"
 )
 
 type ProductService interface {
-	CreateProduct(ctx context.Context, p *product.Product) (*product.Product, error)
+	CreateProduct(ctx context.Context, p *request.ProductCreateRequest) (*product.Product, error)
 }
 
 type productService struct {
-	productRepository repository.ProductRepository
+	productRepo  repository.ProductRepository
+	categoryRepo categoryRepository.CategoryRepository
 }
 
-func NewProductService(productRepo repository.ProductRepository) ProductService {
+func NewProductService(
+	productRepo repository.ProductRepository,
+	categoryRepo categoryRepository.CategoryRepository,
+) ProductService {
 	return &productService{
-		productRepository: productRepo,
+		productRepo:  productRepo,
+		categoryRepo: categoryRepo,
 	}
 }
 
-func (svc *productService) CreateProduct(ctx context.Context, p *product.Product) (*product.Product, error) {
+func (svc *productService) validate(r *request.ProductCreateRequest) error {
+	return nil
+}
+
+func (svc *productService) CreateProduct(ctx context.Context, p *request.ProductCreateRequest) (*product.Product, error) {
+	category, err := svc.categoryRepo.GetReferenceByName(ctx, p.Category)
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("category", category)
 	return nil, nil
 }

@@ -1,6 +1,6 @@
 -- Create table products
 CREATE TABLE "public"."products" (
-    "id" UUID NOT NULL,
+    "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
     "name" varchar(30) NOT NULL,
     "sku" varchar(30) NOT NULL,
     "category" varchar(20) NOT NULL,
