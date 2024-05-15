@@ -17,8 +17,6 @@ CREATE TABLE "public"."products" (
     CONSTRAINT products_pkey PRIMARY KEY (id)
 );
 
-CREATE UNIQUE INDEX product ON "public"."products" USING btree ("name") WHERE ("deleted_at" IS NULL);
-
 CREATE INDEX products_search ON "public"."products" USING gin("_search");
 
 CREATE TRIGGER products_vector_update

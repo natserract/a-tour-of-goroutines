@@ -46,7 +46,7 @@ func (svc *productService) CreateProduct(p *request.ProductCreateRequest) (*prod
 	if err := svc.db.BeginTransaction(svc.ctx, func(tx pgx.Tx, ctx context.Context) error {
 		categoryFound, err := repo.Category.GetReferenceByName(ctx, p.Category)
 		if err != nil {
-			return errs.ProductErrorCategoryNotFound
+			return errs.ProductErrsCategoryNotFound
 		}
 
 		product := &product.Product{
@@ -56,9 +56,9 @@ func (svc *productService) CreateProduct(p *request.ProductCreateRequest) (*prod
 			ImageUrl:    p.ImageUrl,
 			Notes:       p.Notes,
 			Price:       p.Price,
-			Stock:       *p.Stock,
+			Stock:       p.Stock,
 			Location:    p.Location,
-			IsAvailable: *p.IsAvailable,
+			IsAvailable: p.IsAvailable,
 		}
 		productPersisted, err := repo.Product.Persist(ctx, product, tx)
 		if err != nil {

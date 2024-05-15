@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	ProductErrorInvalidUUID      = errors.New("Invalid uuid")
-	ProductErrorCategoryNotFound = errors.New("Product category not found")
+	ProductErrsCategoryNotFound = errors.New("Product category not found")
+	ProductErrsSkuOverflow      = errors.New("Product sku is overflow")
+	ProductErrsImageUrlInvalid  = errors.New("Product image url invalid")
 )
 
 type ProductErrs struct {

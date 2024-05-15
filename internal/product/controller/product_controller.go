@@ -1,7 +1,10 @@
 package controller
 
 import (
+	"errors"
+	"goroutines/internal/product/errs"
 	"goroutines/internal/product/request"
+	"goroutines/internal/product/response"
 	"goroutines/internal/product/service"
 	"net/http"
 
@@ -23,15 +26,29 @@ func NewProductController(svc service.ProductService) ProductController {
 func (c *productController) CreateProduct(ctx *gin.Context) {
 	var reqBody request.ProductCreateRequest
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	if reqBody.ValidateProductCreate() != nil {
+		validateErr := reqBody.ValidateProductCreate()
+		ctx.AbortWithError(http.StatusBadRequest, validateErr)
 		return
 	}
 
-	_, err := c.svc.CreateProduct(&reqBody)
+	productCreated, err := c.svc.CreateProduct(&reqBody)
 	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		switch {
+		case errors.Is(err, errs.ProductErrsCategoryNotFound):
+			ctx.AbortWithError(http.StatusBadRequest, err)
+			break
+		default:
+			ctx.AbortWithError(http.StatusInternalServerError, err)
+			break
+		}
+
 		return
 	}
 
-	ctx.JSON(http.StatusOK, "OK")
+	productCreatedMappedResult := response.ProductToCreateResponse(productCreated)
+	ctx.JSON(http.StatusCreated, productCreatedMappedResult)
 }
