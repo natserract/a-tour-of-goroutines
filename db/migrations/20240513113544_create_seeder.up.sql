@@ -1,4 +1,4 @@
-INSERT INTO categories ("name", created_at, updated_at, "deletedAt")
+INSERT INTO categories ("name", created_at, updated_at, "deleted_at")
 VALUES
 ('Clothing', now(), NULL, NULL),
 ('Accessories', now(), NULL, NULL),

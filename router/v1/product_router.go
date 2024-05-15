@@ -16,8 +16,11 @@ type ProductRouter struct {
 func NewProductRouter(ctx context.Context, db *database.DB) *ProductRouter {
 	productRepo := repository.NewProductRepository(db)
 	categoryRepo := categoryRepository.NewCategoryRepository(db)
-	productService := service.NewProductService(productRepo, categoryRepo)
 
+	productService := service.NewProductService(db, &service.ProductDependency{
+		Product:  productRepo,
+		Category: categoryRepo,
+	}, ctx)
 	return &ProductRouter{
 		Controller: controller.NewProductController(productService),
 	}

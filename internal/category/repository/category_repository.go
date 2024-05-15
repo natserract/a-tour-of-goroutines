@@ -31,7 +31,7 @@ func (cr *categoryRepository) GetReferenceByName(ctx context.Context, name strin
 
 	query := cr.db.QueryBuilder.Select("*").
 		From("categories").
-		Where(sq.ILike{"name": name}).
+		Where(sq.Eq{"name": name}).
 		Limit(1)
 
 	sql, args, err := query.ToSql()
@@ -44,8 +44,9 @@ func (cr *categoryRepository) GetReferenceByName(ctx context.Context, name strin
 		category, err = pgx.CollectOneRow(rows, pgx.RowToStructByPos[domain.Category])
 	}
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, nil
+		return nil, err
 	}
+
 	if err != nil {
 		slog.Error("cannot get category from database",
 			slog.Any("name", name),

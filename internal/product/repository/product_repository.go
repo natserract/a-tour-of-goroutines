@@ -4,12 +4,13 @@ import (
 	"context"
 	domain "goroutines/internal/product"
 	"goroutines/pkg/database"
+	"log/slog"
 
 	"github.com/jackc/pgx/v5"
 )
 
 type ProductRepository interface {
-	Persist(ctx context.Context, p *domain.Product, tx pgx.Tx) (*domain.Product, error)
+	Persist(ctx context.Context, p *domain.Product, parentTx pgx.Tx) (*domain.Product, error)
 }
 
 type productRepository struct {
@@ -23,11 +24,11 @@ func NewProductRepository(db *database.DB) ProductRepository {
 }
 
 // CreateProduct creates a new product record in the database
-func (pr *productRepository) Persist(ctx context.Context, p *domain.Product, tx pgx.Tx) (*domain.Product, error) {
-	query := pr.db.QueryBuilder.Insert("products").
-		Columns("id", "name", "sku", "category", "image_url", "notes", "price", "stock", "location", "is_available", "created_at").
+func (pr *productRepository) Persist(ctx context.Context, p *domain.Product, parentTx pgx.Tx) (*domain.Product, error) {
+	db := pr.db
+	query := db.QueryBuilder.Insert("products").
+		Columns("name", "sku", "category", "image_url", "notes", "price", "stock", "location", "is_available", "created_at").
 		Values(
-			p.Id,
 			p.Name,
 			p.Sku,
 			p.Category,
@@ -39,14 +40,14 @@ func (pr *productRepository) Persist(ctx context.Context, p *domain.Product, tx 
 			p.IsAvailable,
 			p.CreatedAt,
 		).
-		Suffix("RETURNING *")
+		Suffix("RETURNING id, name, sku, category, image_url, notes, price, stock, location, is_available, created_at")
 
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
 	}
 
-	err = pr.db.QueryRow(ctx, sql, args...).Scan(
+	err = parentTx.QueryRow(ctx, sql, args...).Scan(
 		&p.Id,
 		&p.Name,
 		&p.Sku,
@@ -58,12 +59,13 @@ func (pr *productRepository) Persist(ctx context.Context, p *domain.Product, tx 
 		&p.Location,
 		&p.IsAvailable,
 		&p.CreatedAt,
-		&p.UpdatedAt,
 	)
 	if err != nil {
-		if errCode := pr.db.ErrorCode(err); errCode == "23505" {
-			return nil, err
+		if sqlErr := pr.db.ErrorCode(err); sqlErr != nil {
+			return nil, sqlErr
 		}
+
+		slog.Error("Cannot persist product on database", slog.Any("error", err))
 		return nil, err
 	}
 

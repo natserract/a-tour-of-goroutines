@@ -1,7 +1,7 @@
 -- Create table products
 CREATE TABLE "public"."products" (
     "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
-    "name" varchar(30) NOT NULL,
+    "name" varchar NOT NULL,
     "sku" varchar(30) NOT NULL,
     "category" varchar(20) NOT NULL,
     "image_url" varchar(200) NOT NULL,
@@ -16,6 +16,8 @@ CREATE TABLE "public"."products" (
 	"deleted_at" timestamptz NULL,
     CONSTRAINT products_pkey PRIMARY KEY (id)
 );
+
+CREATE UNIQUE INDEX product ON "public"."products" USING btree ("name") WHERE ("deleted_at" IS NULL);
 
 CREATE INDEX products_search ON "public"."products" USING gin("_search");
 

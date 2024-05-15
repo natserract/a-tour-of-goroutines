@@ -27,7 +27,7 @@ func (c *productController) CreateProduct(ctx *gin.Context) {
 		return
 	}
 
-	_, err := c.svc.CreateProduct(ctx.Copy(), &reqBody)
+	_, err := c.svc.CreateProduct(&reqBody)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
