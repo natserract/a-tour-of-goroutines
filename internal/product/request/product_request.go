@@ -12,7 +12,7 @@ type ProductCreateRequest struct {
 	ImageUrl    string  `form:"imageUrl" binding:"required,url"`
 	Notes       string  `form:"notes" binding:"required,min=1,max=200"`
 	Price       float64 `form:"price" binding:"required,min=1"`
-	Stock       int     `form:"stock" binding:"required,min=0,max=100000"`
+	Stock       *int    `form:"stock" binding:"required,min=0,max=100000"`
 	Location    string  `form:"location" binding:"required"`
 	IsAvailable bool    `form:"isAvailable" binding:"required"`
 }

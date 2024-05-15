@@ -2,6 +2,7 @@ package controller
 
 import (
 	"errors"
+	"fmt"
 	"goroutines/internal/product/errs"
 	"goroutines/internal/product/request"
 	"goroutines/internal/product/response"
@@ -26,11 +27,14 @@ func NewProductController(svc service.ProductService) ProductController {
 func (c *productController) CreateProduct(ctx *gin.Context) {
 	var reqBody request.ProductCreateRequest
 	if err := ctx.ShouldBindJSON(&reqBody); err != nil {
+		fmt.Println("Error", err)
+
 		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	if reqBody.ValidateProductCreate() != nil {
 		validateErr := reqBody.ValidateProductCreate()
+
 		ctx.AbortWithError(http.StatusBadRequest, validateErr)
 		return
 	}

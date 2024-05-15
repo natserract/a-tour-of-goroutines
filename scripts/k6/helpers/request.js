@@ -112,7 +112,15 @@ export function testPostJsonAssert(
   );
 
   if (!isSuccess) {
-    console.log("Error: ", route, isSuccess, body);
+    console.log(
+      "Error: ",
+      route,
+      isSuccess,
+      body,
+      "Case: ",
+      currentTestName,
+      expectedCase,
+    );
   }
 
   return {
