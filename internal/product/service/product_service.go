@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"goroutines/internal/category"
 	categoryRepository "goroutines/internal/category/repository"
 	"goroutines/internal/product"
 	"goroutines/internal/product/errs"
@@ -67,6 +68,33 @@ func (svc *productService) CreateProduct(p *request.ProductCreateRequest) (*prod
 	}
 
 	return productPersisted, nil
+}
+
+func (svc *productService) ReadCategoryEntry(categoryInput string) (*category.Category, error) {
+	repo := svc.repo
+
+	// Define unbuffered channel
+	respChan, errChan := make(chan *category.Category), make(chan error)
+
+	// Spawn go routine
+	go func() {
+		categoryFound, err := repo.Category.GetReferenceByName(svc.ctx, categoryInput)
+		if err != nil {
+			// Write value to the channel (setter - you named it)
+			errChan <- err
+		}
+
+		// Write value to the channel (setter - you named it)
+		respChan <- categoryFound
+	}()
+
+	select {
+	case response := <-respChan:
+		return response, nil
+	case err := <-errChan:
+		return nil, err
+	}
+	// return responseChan, errChan
 }
 
 func (svc *productService) CreateProductGoroutines(p *request.ProductCreateRequest) <-chan util.Result[*product.Product] {
