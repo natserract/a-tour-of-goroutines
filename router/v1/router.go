@@ -26,6 +26,6 @@ func (v *v1Router) Load(router *gin.Engine) {
 	{
 		// Product api endpoint
 		product := v1.Group("/product")
-		product.POST("/", v.Product.Controller.CreateProductGoroutines)
+		product.POST("/", v.Product.Controller.CreateProductTx)
 	}
 }
