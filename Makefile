@@ -7,6 +7,8 @@ reset: migratedown migrateup dev
 ## dev: run build and up on dev environment.
 dev: build up
 
+prod: build up-prod
+
 ## build: run build on dev environment.
 build:
 	GOARCH=amd64 GOOS=darwin go build -o main .
@@ -14,6 +16,9 @@ build:
 ## up: run docker-compose up with dev environment.
 up:
 	./main
+
+up-prod:
+	ENV=production ./main
 
 ## run golang-migrate up
 migrateup:
