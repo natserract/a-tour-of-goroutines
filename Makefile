@@ -2,7 +2,8 @@
 
 DATABASE_URL := "postgres://${DB_USERNAME}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?${DB_PARAMS}"
 
-reset: migratedown migrateup dev
+reset: migratedown migrateup prod
+reset-dev: migratedown migrateup dev
 
 ## dev: run build and up on dev environment.
 dev: build up
