@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"goroutines/internal/category"
 	categoryRepository "goroutines/internal/category/repository"
 	"goroutines/internal/product"
 	"goroutines/internal/product/errs"
@@ -10,6 +9,7 @@ import (
 	"goroutines/internal/product/request"
 	"goroutines/pkg/database"
 	"goroutines/util"
+	"runtime"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -17,6 +17,7 @@ import (
 type ProductService interface {
 	CreateProduct(p *request.ProductCreateRequest) (*product.Product, error)
 	CreateProductGoroutines(p *request.ProductCreateRequest) <-chan util.Result[*product.Product]
+	CreateProductGoroutinesIncrease(p *request.ProductCreateRequest) <-chan util.Result[*product.Product]
 	CreateProductTx(p *request.ProductCreateRequest) (*product.Product, error)
 }
 
@@ -70,33 +71,6 @@ func (svc *productService) CreateProduct(p *request.ProductCreateRequest) (*prod
 	return productPersisted, nil
 }
 
-func (svc *productService) ReadCategoryEntry(categoryInput string) (*category.Category, error) {
-	repo := svc.repo
-
-	// Define unbuffered channel
-	respChan, errChan := make(chan *category.Category), make(chan error)
-
-	// Spawn go routine
-	go func() {
-		categoryFound, err := repo.Category.GetReferenceByName(svc.ctx, categoryInput)
-		if err != nil {
-			// Write value to the channel (setter - you named it)
-			errChan <- err
-		}
-
-		// Write value to the channel (setter - you named it)
-		respChan <- categoryFound
-	}()
-
-	select {
-	case response := <-respChan:
-		return response, nil
-	case err := <-errChan:
-		return nil, err
-	}
-	// return responseChan, errChan
-}
-
 func (svc *productService) CreateProductGoroutines(p *request.ProductCreateRequest) <-chan util.Result[*product.Product] {
 	repo := svc.repo
 
@@ -134,6 +108,51 @@ func (svc *productService) CreateProductGoroutines(p *request.ProductCreateReque
 		}
 		close(result)
 	}()
+
+	return result
+}
+
+func (svc *productService) CreateProductGoroutinesIncrease(p *request.ProductCreateRequest) <-chan util.Result[*product.Product] {
+	repo := svc.repo
+
+	worker := runtime.NumCPU()
+	result := make(chan util.Result[*product.Product], worker)
+
+	task := func() {
+		defer close(result)
+
+		categoryFound, err := repo.Category.GetReferenceByName(svc.ctx, p.Category)
+		if err != nil {
+			result <- util.Result[*product.Product]{
+				Error: errs.ProductErrsCategoryNotFound,
+			}
+			return
+		}
+
+		model := &product.Product{
+			Name:        p.Name,
+			Sku:         p.Sku,
+			Category:    categoryFound.Name,
+			ImageUrl:    p.ImageUrl,
+			Notes:       p.Notes,
+			Price:       p.Price,
+			Stock:       *p.Stock,
+			Location:    p.Location,
+			IsAvailable: p.IsAvailable,
+		}
+		productPersisted, err := repo.Product.Persist(svc.ctx, model)
+		if err != nil {
+			result <- util.Result[*product.Product]{
+				Error: err,
+			}
+			return
+		}
+
+		result <- util.Result[*product.Product]{
+			Result: productPersisted,
+		}
+	}
+	go task()
 
 	return result
 }
