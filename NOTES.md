@@ -4,10 +4,11 @@
 
 1. Intro to go channels
 2. Channel communication strategy
-3. Error handling
-4. Shared state, and appending external state
-5. Waitgroup & Mutex (Synchronization Primitives)
-6. Batching
+3. Deadlock situations in the Golang Channel
+4. Error handling
+5. Shared state, and appending external state
+6. Waitgroup & Mutex (Synchronization Primitives)
+7. Batching
 
 ## 1. Intro to Go Channels
 
@@ -18,15 +19,23 @@ Channels are concurrent-safe queues that are used to safely pass messages betwee
 Concurrency is the composition of independently executing processes, while parallelism is the simultaneous execution of computation. Parallelism is about executing many things at once, it’s focus is execution. While concurrency is about dealing with many things at once, it’s focus is structure
 
 Channnels:
-To communicate and connect between these goroutines by channels
+To communicate and connect between these goroutines by channels.
+
+Golang channel makes goroutines can communicate each other. Through channel, goroutines send or receive messages (values).
 
 Only the sender should close the channel
 Sending data to a closed channel will panic. So to ensure that the receiver doesn’t prematurely close the channel while the sender is still sending data to it, the sender should close the channel.
 
 ## 2. Channel communication strategy
 
-Unidirectional Channels,
-Bidirectional Channels,
+### Unidirectional Channels,
+
+By default, channels in Go are unidirectional, meaning they can either be used for sending values (<-chan) or receiving values (chan<-). Unidirectional channels enforce the restriction that a channel can only be used for sending or receiving, which can help in making the intent of code clearer.
+
+### Bidirectional Channels,
+
+A channel can also be created as bidirectional (chan). This allows both sending and receiving operations on the channel. Bidirectional channels are useful when you want to use a single channel for both sending and receiving in different parts of your code.
+
 Buffered Channels,
 Select Statement,
 Closing Channels,

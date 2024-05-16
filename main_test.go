@@ -65,7 +65,7 @@ func TestCloseChan(t *testing.T) {
 		close(replyChan)
 	}
 
-	// Start goroutines
+	// Start worker goroutine
 	go replyJobs()
 
 	// Check how many times iterated
@@ -75,7 +75,7 @@ func TestCloseChan(t *testing.T) {
 	}
 	assert.Equal(t, 5, sum)
 
-	// PANIC!
+	// PANIC! send on closed channel!
 	// replyChan <- 6
 }
 
@@ -89,26 +89,21 @@ func TestCloseWithDeferChan(t *testing.T) {
 		defer close(replyChan)
 
 		for i := 0; i < 5; i++ {
-			if i == 4 {
-				// If an error or panic occurs before reaching the
-				// end of the function, the channel will still be closed
-				// due to the deferred close operation.
-				// panic("Something went wrong!") // Simulate a panic occurring during sendData
-			} else {
-				replyChan <- i
-			}
+			replyChan <- i
 		}
 	}
 
-	replyReceiver := func() {
-		for val := range replyChan {
-			fmt.Println("Fetched val: ", val)
-		}
-	}
-
-	// Start 1 goroutine
+	// Start worker goroutine
 	go replySender()
-	replyReceiver()
+
+	// Receiver
+	for val := range replyChan {
+		fmt.Println("Fetched val: ", val)
+	}
+
+	// If an error or panic occurs before reaching the
+	// end of the function, the channel will still be closed
+	// due to the deferred close operation.
 	fmt.Println("Next line will executed")
 }
 
@@ -136,4 +131,77 @@ func TestBufferedChannel(t *testing.T) {
 
 	wg.Wait()
 	close(replyChan)
+}
+
+func TestPanicSituations(t *testing.T) {
+	// Deadlock
+	//
+	// A deadlock happens when all goroutines involved in a concurrent program are blocked,
+	// waiting for each other to proceed, resulting in a situation where no progress can be made.
+	// Deadlocks commonly occur in Go when there is a mismatch in the sending and receiving operations on channels.
+	//
+	//
+
+	/**
+	// Deadlock 1: Empty channel (No receiver)
+	// No other groutine running
+
+	valChan := make(chan int)
+
+	// Do nothing spawned goroutine
+	go func() {}()
+
+	fmt.Println("DEADLOCK 1", <-valChan)
+	*/
+
+	/**
+	// Deadlock 2: Empty channel (No sender)
+	// No other groutine running
+
+	valChan2 := make(chan int)
+	go func() {
+		// Send data to the channel (i)
+		valChan2 <- 10
+		//
+		// No other goroutines that can send to the channel either
+		// valChan2 <- 20 // (Send data to the channel (j))
+	}()
+
+	_ = <-valChan2 // (OK)
+	// PANIC: DEADLOCK 2:
+	// Tries to receive another value, but no other groutine running
+	_ = <-valChan2
+	*/
+}
+
+func TestChannelDirection(t *testing.T) {
+	// By default a channel is bidirectional but you can create a unidirectional channel
+	//
+	// Bidirectional: var bidirectionalChan chan string // can read from, write to and close()
+	// Unidirectional (only be used for sending or receiving):
+	// 1. var receiveOnlyChan <-chan string // can read from, but cannot write to or close()
+	// 2. var sendOnlyChan chan<- string    // cannot read from, but can write to and close()
+	//
+	// Unidirectional (sending)
+	undirectionSendChan := make(chan int)
+	sendOnlyWorker := func(c chan<- int) {
+		c <- 10
+	}
+	go sendOnlyWorker(undirectionSendChan)
+	assert.Equal(t, 10, <-undirectionSendChan)
+	//
+	//
+	// Unidirectional (receiving)
+	undirectionReceiveChan := make(chan int)
+	receiveOnlyWorker := func(ch <-chan int) {
+		for num := range ch {
+			fmt.Println("Received:", num)
+		}
+	}
+	go receiveOnlyWorker(undirectionReceiveChan)
+
+	// Send data to the channel
+	for i := 0; i < 3; i++ {
+		undirectionReceiveChan <- i
+	}
 }
