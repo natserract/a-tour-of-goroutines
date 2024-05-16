@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -92,7 +93,7 @@ func TestCloseWithDeferChan(t *testing.T) {
 				// If an error or panic occurs before reaching the
 				// end of the function, the channel will still be closed
 				// due to the deferred close operation.
-				panic("Something went wrong!") // Simulate a panic occurring during sendData
+				// panic("Something went wrong!") // Simulate a panic occurring during sendData
 			} else {
 				replyChan <- i
 			}
@@ -109,4 +110,30 @@ func TestCloseWithDeferChan(t *testing.T) {
 	go replySender()
 	replyReceiver()
 	fmt.Println("Next line will executed")
+}
+
+func TestBufferedChannel(t *testing.T) {
+	// We need to wait for goroutines to finish.
+	var wg sync.WaitGroup
+
+	// Buffered channels are useful when you know how many goroutines you have launched,
+	// want to limit the number of goroutines you will launch,
+	// or want to limit the amount of work that is queued up.
+	//
+	// When a sender sends a value on a buffered channel, it blocks only if the channel is full.
+	replyChan := make(chan int, 2)
+
+	wg.Add(1) // Add 1 goroutine
+	go func(ch chan int) {
+		defer wg.Done()
+
+		ch <- 1
+		ch <- 2
+
+		// DEADLOCK!
+		// ch <- 3
+	}(replyChan)
+
+	wg.Wait()
+	close(replyChan)
 }
