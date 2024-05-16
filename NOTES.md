@@ -26,6 +26,74 @@ Golang channel makes goroutines can communicate each other. Through channel, gor
 Only the sender should close the channel
 Sending data to a closed channel will panic. So to ensure that the receiver doesn’t prematurely close the channel while the sender is still sending data to it, the sender should close the channel.
 
+Unbuffered Go Channels Lifecycle (unidirectional):
+
+1. Allocates the channel
+
+```go
+make(chan T)
+```
+
+2. Wait to senders ready
+
+```go
+go func(ch T) {
+	ch <- 1
+}(ch)
+```
+
+3. Wait to receivers ready
+
+It will block until a sender is ready to send the value.
+
+```go
+fmt.Println(<-ch)
+```
+
+4. Closing
+
+Closing a channel indicates that no more values will be sent on it.
+
+```go
+close(ch)
+```
+
+Blocking:
+There is no receiver for stopChannel<- sender and there is no sender for <-c receiver. In other words: the other side is not ready for each of these channels!
+
+Unbuffered Channels: Sending or receiving on an unbuffered channel blocks the goroutine until the other side is ready. This is useful for ensuring that two goroutines synchronize on some event.
+
+Buffered Channels: These have a buffer of a fixed size and will only block when the buffer is full (sending) or empty (receiving).
+
+Every goroutines is independent (concurrent):
+
+```go
+channel2 := make(chan int)
+
+	// Sender
+	go func() {
+		time.Sleep(time.Second)
+		channel2 <- 1
+	}()
+	go func() {
+		time.Sleep(time.Second)
+		channel2 <- 2
+	}()
+	go func() {
+		time.Sleep(time.Second)
+		channel2 <- 3
+	}()
+
+	// Receiver
+	fmt.Println("Directional Chan", <-channel2)
+	fmt.Println("Directional Chan", <-channel2)
+	fmt.Println("Directional Chan", <-channel2)
+
+	// Output is dynamically, sometimes different (without wait time.Sleep)
+	// Output: 1, 2, 3
+	// Output: 2, 1, 3
+```
+
 ## 2. Channel communication strategy
 
 ### Unidirectional Channels,

@@ -80,7 +80,7 @@ func TestCloseChan(t *testing.T) {
 }
 
 func TestCloseWithDeferChan(t *testing.T) {
-	t.Parallel()
+	fmt.Println("------------------- TestCloseWithDeferChan -------------------")
 
 	replyChan := make(chan int)
 	replySender := func() {
@@ -175,6 +175,8 @@ func TestPanicSituations(t *testing.T) {
 }
 
 func TestChannelDirection(t *testing.T) {
+	fmt.Println("------------------- TestChannelDirection -------------------")
+
 	// By default a channel is bidirectional but you can create a unidirectional channel
 	//
 	// Bidirectional: var bidirectionalChan chan string // can read from, write to and close()
@@ -203,5 +205,49 @@ func TestChannelDirection(t *testing.T) {
 	// Send data to the channel
 	for i := 0; i < 3; i++ {
 		undirectionReceiveChan <- i
+	}
+}
+
+func TestChannelBuffered(t *testing.T) {
+	fmt.Println("------------------- TestChannelBuffered -------------------")
+
+	// Executions like queue task
+	replyChan := make(chan int)
+	go func() {
+		for i := 0; i < 5; i++ {
+			replyChan <- i
+			fmt.Println("Placed: ", i)
+		}
+
+		close(replyChan)
+	}()
+
+	for n := range replyChan {
+		fmt.Println("Preparing ", n)
+		time.Sleep(2 * time.Second)
+		fmt.Println("Served ", n)
+		fmt.Println("")
+	}
+}
+
+func TestChannelUnbuffered(t *testing.T) {
+	fmt.Println("------------------- TestChannelUnbuffered -------------------")
+
+	// Executions like queue task
+	replyChan := make(chan int, 3)
+	go func() {
+		for i := 0; i < 5; i++ {
+			replyChan <- i
+			fmt.Println("Placed: ", i)
+		}
+
+		close(replyChan)
+	}()
+
+	for n := range replyChan {
+		fmt.Println("Preparing ", n)
+		time.Sleep(2 * time.Second)
+		fmt.Println("Served ", n)
+		fmt.Println("")
 	}
 }
