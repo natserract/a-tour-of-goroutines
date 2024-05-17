@@ -10,6 +10,8 @@ import (
 )
 
 func TestBasicDoneChan(t *testing.T) {
+	fmt.Println("------------------- TestBasicDoneChan -------------------")
+
 	// Define the unbuffered channel
 	doneCh := make(chan bool)
 
@@ -27,7 +29,7 @@ func TestBasicDoneChan(t *testing.T) {
 }
 
 func TestBasicPlusOneChan(t *testing.T) {
-	t.Parallel()
+	fmt.Println("------------------- TestBasicPlusOneChan -------------------")
 
 	// Spawn a goroutine and pass the argument
 	plusOneCh := make(chan int)
@@ -45,38 +47,38 @@ func TestBasicPlusOneChan(t *testing.T) {
 }
 
 func TestCloseChan(t *testing.T) {
-	t.Parallel()
+	fmt.Println("------------------- TestCloseChan -------------------")
 
 	// Closing a channel indicates that no more values will be sent on it.
 	// A closed channel states that we can't send data to it, but we can still read data from it.
-	replyChan := make(chan int)
+	jobsChan := make(chan int)
 
 	// Sender
-	replyJobs := func() {
+	createJobs := func() {
 		// Send items to be processed
 		// Wait all goroutines to finish
 		for i := 0; i < 5; i++ {
-			replyChan <- i
+			jobsChan <- i
 		}
 
 		// Only the sender should close the channel
 		// Sending data to a closed channel will panic. So to ensure that the receiver doesn’t prematurely
 		// close the channel while the sender is still sending data to it, the sender should close the channel.
-		close(replyChan)
+		close(jobsChan)
 	}
 
 	// Start worker goroutine
-	go replyJobs()
+	go createJobs()
 
 	// Check how many times iterated
 	sum := 0
-	for range replyChan { // Receiver
+	for range jobsChan { // Receiver
 		sum += 1
 	}
 	assert.Equal(t, 5, sum)
 
 	// PANIC! send on closed channel!
-	// replyChan <- 6
+	// jobsChan <- 6
 }
 
 func TestCloseWithDeferChan(t *testing.T) {
@@ -107,57 +109,35 @@ func TestCloseWithDeferChan(t *testing.T) {
 	fmt.Println("Next line will executed")
 }
 
-func TestBufferedChannel(t *testing.T) {
-	// We need to wait for goroutines to finish.
-	var wg sync.WaitGroup
-
-	// Buffered channels are useful when you know how many goroutines you have launched,
-	// want to limit the number of goroutines you will launch,
-	// or want to limit the amount of work that is queued up.
-	//
-	// When a sender sends a value on a buffered channel, it blocks only if the channel is full.
-	replyChan := make(chan int, 2)
-
-	wg.Add(1) // Add 1 goroutine
-	go func(ch chan int) {
-		defer wg.Done()
-
-		ch <- 1
-		ch <- 2
-
-		// DEADLOCK!
-		// ch <- 3
-	}(replyChan)
-
-	wg.Wait()
-	close(replyChan)
-}
-
 func TestPanicSituations(t *testing.T) {
-	// Deadlock
-	//
-	// A deadlock happens when all goroutines involved in a concurrent program are blocked,
-	// waiting for each other to proceed, resulting in a situation where no progress can be made.
-	// Deadlocks commonly occur in Go when there is a mismatch in the sending and receiving operations on channels.
-	//
-	//
+	fmt.Println("------------------- TestPanicSituations -------------------")
 
 	/**
-	// Deadlock 1: Empty channel (No receiver)
-	// No other groutine running
+	Deadlock
 
+	A deadlock happens when all goroutines involved in a concurrent program are blocked,
+	waiting for each other to proceed, resulting in a situation where no progress can be made.
+
+	Deadlocks commonly occur in Go when there is a mismatch in the sending and receiving operations on channels.
+
+	--------------------------------------------------
+	DEADLOCK 1: Empty channel (No receiver)
+	No other groutine running
+
+	```go
 	valChan := make(chan int)
 
 	// Do nothing spawned goroutine
 	go func() {}()
 
 	fmt.Println("DEADLOCK 1", <-valChan)
-	*/
+	```
 
-	/**
-	// Deadlock 2: Empty channel (No sender)
-	// No other groutine running
+	--------------------------------------------------
+	DEADLOCK 2: Empty channel (No sender)
+	No other groutine running
 
+	```go
 	valChan2 := make(chan int)
 	go func() {
 		// Send data to the channel (i)
@@ -168,9 +148,11 @@ func TestPanicSituations(t *testing.T) {
 	}()
 
 	_ = <-valChan2 // (OK)
-	// PANIC: DEADLOCK 2:
+
+	// PANIC!:
 	// Tries to receive another value, but no other groutine running
 	_ = <-valChan2
+	```
 	*/
 }
 
@@ -208,13 +190,36 @@ func TestChannelDirection(t *testing.T) {
 	}
 }
 
-func TestChannelBuffered(t *testing.T) {
-	fmt.Println("------------------- TestChannelBuffered -------------------")
+func TestChannelUnbuffered(t *testing.T) {
+	fmt.Println("------------------- TestChannelUnbuffered -------------------")
 
 	// Executions like queue task
 	replyChan := make(chan int)
 	go func() {
 		for i := 0; i < 5; i++ {
+			// Send data to the channel will blocking until receivers ready
+			replyChan <- i
+			fmt.Println("Placed: ", i)
+		}
+
+		close(replyChan)
+	}()
+
+	for n := range replyChan {
+		fmt.Println("Preparing ", n)
+		time.Sleep(2 * time.Second) // Time processed
+		fmt.Println("Served ", n)
+		fmt.Println("")
+	}
+}
+
+func TestChannelBuffered(t *testing.T) {
+	fmt.Println("------------------- TestChannelBuffered -------------------")
+
+	replyChan := make(chan int, 3)
+	go func() {
+		for i := 0; i < 5; i++ {
+			// Send data to the channel will blocking until (buffer size full or empty) and receivers ready
 			replyChan <- i
 			fmt.Println("Placed: ", i)
 		}
@@ -230,24 +235,30 @@ func TestChannelBuffered(t *testing.T) {
 	}
 }
 
-func TestChannelUnbuffered(t *testing.T) {
-	fmt.Println("------------------- TestChannelUnbuffered -------------------")
+func TestBufferedChannelDeadlock(t *testing.T) {
+	fmt.Println("------------------- TestBufferedChannelDeadlock -------------------")
 
-	// Executions like queue task
-	replyChan := make(chan int, 3)
-	go func() {
-		for i := 0; i < 5; i++ {
-			replyChan <- i
-			fmt.Println("Placed: ", i)
-		}
+	// We need to wait for goroutines to finish.
+	var wg sync.WaitGroup
 
-		close(replyChan)
-	}()
+	// Buffered channels are useful when you know how many goroutines you have launched,
+	// want to limit the number of goroutines you will launch,
+	// or want to limit the amount of work that is queued up.
+	//
+	// When a sender sends a value on a buffered channel, it blocks only if the channel is full.
+	replyChan := make(chan int, 2)
 
-	for n := range replyChan {
-		fmt.Println("Preparing ", n)
-		time.Sleep(2 * time.Second)
-		fmt.Println("Served ", n)
-		fmt.Println("")
-	}
+	wg.Add(1) // Add 1 goroutine
+	go func(ch chan int) {
+		defer wg.Done()
+
+		ch <- 1
+		ch <- 2
+
+		// DEADLOCK!
+		// ch <- 3
+	}(replyChan)
+
+	wg.Wait()
+	close(replyChan)
 }
