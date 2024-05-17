@@ -1,12 +1,14 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/sync/errgroup"
 )
 
 func TestBasicDoneChan(t *testing.T) {
@@ -248,7 +250,7 @@ func TestBufferedChannelDeadlock(t *testing.T) {
 	// When a sender sends a value on a buffered channel, it blocks only if the channel is full.
 	replyChan := make(chan int, 2)
 
-	wg.Add(1) // Add 1 goroutine
+	wg.Add(1) // Add 2 goroutine
 	go func(ch chan int) {
 		defer wg.Done()
 
@@ -261,4 +263,29 @@ func TestBufferedChannelDeadlock(t *testing.T) {
 
 	wg.Wait()
 	close(replyChan)
+
+	fmt.Println(<-replyChan) // Process the results
+	fmt.Println(<-replyChan) // Process the results
+	// fmt.Println(<-replyChan) // Process the results
+}
+
+func TestErrorHandling(t *testing.T) {
+	fmt.Println("------------------- TestErrorHandling -------------------")
+
+	var eg errgroup.Group
+	jobsChan := make(chan int)
+
+	eg.Go(func() error {
+		<-jobsChan // receiver
+		return fmt.Errorf("Go to error")
+	})
+
+	jobsChan <- 10
+	close(jobsChan)
+
+	err := eg.Wait()
+	if assert.Error(t, err, "") {
+		expectedErr := errors.New("Go to error")
+		assert.Equal(t, expectedErr, err)
+	}
 }

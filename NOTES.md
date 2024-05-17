@@ -65,6 +65,11 @@ Unbuffered Channels: Sending or receiving on an unbuffered channel blocks the go
 
 Buffered Channels: These have a buffer of a fixed size and will only block when the buffer is full (sending) or empty (receiving).
 
+```sh
+Unbuffered channel: synchronous
+Buffered channel: synchronous or asynchronous
+```
+
 Every goroutines is independent (concurrent):
 
 ```go
