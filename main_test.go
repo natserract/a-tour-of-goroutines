@@ -292,3 +292,95 @@ func TestErrorHandling(t *testing.T) {
 		assert.Equal(t, expectedErr, err)
 	}
 }
+
+func TestRaceConditions(t *testing.T) {
+	fmt.Println("------------------- TestRaceConditions -------------------")
+
+	var wg sync.WaitGroup
+	var jobsChan = make(chan int)
+
+	var total = 0
+	send := func(ch chan int) {
+		defer wg.Done() // called by each goroutine when it finishes its work, decrementing the internal counter of the wait group.
+
+		for i := 0; i < 10; i++ {
+			ch <- i
+			total++
+		}
+	}
+
+	receive := func() {
+		for range jobsChan {
+		}
+	}
+
+	// Spawn 3 goroutines
+	gs := 3
+	for i := 0; i < gs; i++ {
+		wg.Add(1) // used to add the number of goroutines that need to be waited upon.
+		go send(jobsChan)
+	}
+
+	go func() {
+		wg.Wait() // used to block the execution of the goroutine until all the goroutines have called Done()
+		close(jobsChan)
+	}()
+
+	receive()
+	fmt.Println("total", total) // Output: Undetermined (Race condition), should be 30
+}
+
+func TestSyncLocking(t *testing.T) {
+	fmt.Println("------------------- TestSyncLocking -------------------")
+
+	// Waitgroup
+	// WaitGroup to wait for multiple goroutines to finish their execution.
+	// It ensures that the main program doesn’t exit before all goroutines have completed.
+	//
+	// Mutexes (explicit locking)
+	// Mutexes are used to prevent multiple goroutines from accessing shared data simultaneously,
+	// while channels enable safe communication between multiple goroutines
+	//
+	// The Mutex (mutual exclusion lock) is an invaluable resource
+	// when synchronizing state across multiple goroutines,
+	//
+	// Problem: multiple Goroutines need to access a shared piece of state
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var jobsChan = make(chan int)
+
+	var total = 0
+
+	// to protect shared resources from concurrent access, preventing race conditions.
+	send := func(ch chan int) {
+		defer mu.Unlock()
+		defer wg.Done() // called by each goroutine when it finishes its work, decrementing the internal counter of the wait group.
+
+		mu.Lock()
+		for i := 0; i < 10; i++ {
+			ch <- i
+			total++
+		}
+	}
+
+	receive := func() {
+		for range jobsChan {
+		}
+	}
+
+	// Spawn 3 goroutines
+	gs := 3
+	for i := 0; i < gs; i++ {
+		wg.Add(1) // used to add the number of goroutines that need to be waited upon.
+		go send(jobsChan)
+	}
+
+	go func() {
+		wg.Wait() // used to block the execution of the goroutine until all the goroutines have called Done()
+		close(jobsChan)
+	}()
+
+	receive()
+	fmt.Println("total", total) // Output: Always 30
+	assert.Equal(t, 30, total)
+}

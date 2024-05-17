@@ -10,6 +10,8 @@
 6. Waitgroup & Mutex (Synchronization Primitives)
 7. Batching
 
+> Go’s official documentation states that “A common Go newbie mistake is to over-use channels and goroutines just because it’s possible, and/or because it’s fun.”
+
 ## 1. Intro to Go Channels
 
 Pengenalan basic tentang go channels
