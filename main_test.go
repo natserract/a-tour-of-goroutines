@@ -275,14 +275,17 @@ func TestErrorHandling(t *testing.T) {
 	var eg errgroup.Group
 	jobsChan := make(chan int)
 
+	// Create new goroutine
 	eg.Go(func() error {
 		<-jobsChan // receiver
 		return fmt.Errorf("Go to error")
 	})
 
-	jobsChan <- 10
+	jobsChan <- 10 // Sender
 	close(jobsChan)
 
+	// Waiting all goroutines done
+	// If err will returned
 	err := eg.Wait()
 	if assert.Error(t, err, "") {
 		expectedErr := errors.New("Go to error")

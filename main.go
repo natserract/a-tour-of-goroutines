@@ -1,21 +1,6 @@
 package main
 
-import (
-	"context"
-	"errors"
-	"fmt"
-	"goroutines/config"
-	"goroutines/pkg/database"
-	"goroutines/pkg/env"
-	"net/http"
-	"os"
-
-	routes "goroutines/router"
-
-	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-)
-
+/**
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -71,5 +56,10 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("HTTP server error: %s\n", err)
 	}
+
+}
+*/
+
+func main() {
 
 }
