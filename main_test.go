@@ -250,7 +250,7 @@ func TestBufferedChannelDeadlock(t *testing.T) {
 	// When a sender sends a value on a buffered channel, it blocks only if the channel is full.
 	replyChan := make(chan int, 2)
 
-	wg.Add(1) // Add 2 goroutine
+	wg.Add(1) // Start worker goroutine
 	go func(ch chan int) {
 		defer wg.Done()
 
