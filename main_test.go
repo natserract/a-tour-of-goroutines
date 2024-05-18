@@ -384,3 +384,8 @@ func TestSyncLocking(t *testing.T) {
 	fmt.Println("total", total) // Output: Always 30
 	assert.Equal(t, 30, total)
 }
+
+func TestWithCancellation(t *testing.T) {
+	fmt.Println("------------------- TestWithCancellation -------------------")
+
+}
