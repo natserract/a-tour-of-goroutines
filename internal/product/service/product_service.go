@@ -17,7 +17,7 @@ import (
 type ProductService interface {
 	CreateProduct(p *request.ProductCreateRequest) (*product.Product, error)
 	CreateProductGoroutines(p *request.ProductCreateRequest) <-chan util.Result[*product.Product]
-	CreateProductGoroutinesIncrease(p *request.ProductCreateRequest) <-chan util.Result[*product.Product]
+	CreateProductGoroutinesBuffered(p *request.ProductCreateRequest) <-chan util.Result[*product.Product]
 	CreateProductTx(p *request.ProductCreateRequest) (*product.Product, error)
 }
 
@@ -112,7 +112,7 @@ func (svc *productService) CreateProductGoroutines(p *request.ProductCreateReque
 	return result
 }
 
-func (svc *productService) CreateProductGoroutinesIncrease(p *request.ProductCreateRequest) <-chan util.Result[*product.Product] {
+func (svc *productService) CreateProductGoroutinesBuffered(p *request.ProductCreateRequest) <-chan util.Result[*product.Product] {
 	repo := svc.repo
 
 	worker := runtime.NumCPU()

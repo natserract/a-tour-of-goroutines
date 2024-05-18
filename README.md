@@ -10,5 +10,5 @@ Deep dive into goroutines
 ## Run test:
 
 ```sh
-go test main_test.go
+go test
 ```

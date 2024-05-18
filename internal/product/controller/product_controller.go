@@ -101,7 +101,7 @@ func (c *productController) CreateProductGoroutinesIncrease(ctx *gin.Context) {
 		return
 	}
 
-	productCreated := <-c.svc.CreateProductGoroutinesIncrease(&reqBody)
+	productCreated := <-c.svc.CreateProductGoroutinesBuffered(&reqBody)
 	if productCreated.Error != nil {
 		switch {
 		case errors.Is(productCreated.Error, errs.ProductErrsCategoryNotFound):
