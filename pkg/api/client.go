@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// Client is an http client that is configured for Exercism.
+// Client is an configured http client.
 type Client struct {
 	*http.Client
 	ContentType string
@@ -18,11 +18,11 @@ var (
 	// It's overridden from the root command so that we can set the version.
 	UserAgent = "ipapi.co/#go-v1.5"
 
-	// HTTPClient is the client used to make HTTP calls in the cli package.
+	// HTTPClient is the client used to make HTTP calls.
 	HTTPClient = &http.Client{}
 )
 
-// NewClient returns an Exercism API client.
+// NewClient returns an API client.
 func NewClient(baseURL string) (*Client, error) {
 	return &Client{
 		Client:     HTTPClient,
@@ -30,7 +30,7 @@ func NewClient(baseURL string) (*Client, error) {
 	}, nil
 }
 
-// NewRequest returns an http.Request with information for the Exercism API.
+// NewRequest returns an http.Request with information for the API.
 func (c *Client) NewRequest(method, url string, body io.Reader) (*http.Request, error) {
 	if c.Client == nil {
 		c.Client = HTTPClient
