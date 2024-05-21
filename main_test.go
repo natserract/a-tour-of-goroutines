@@ -352,7 +352,7 @@ func TestSyncLocking(t *testing.T) {
 	var total = 0
 
 	// to protect shared resources from concurrent access, preventing race conditions.
-	send := func(ch chan int) {
+	send := func(ch chan<- int) {
 		defer mu.Unlock()
 		defer wg.Done() // called by each goroutine when it finishes its work, decrementing the internal counter of the wait group.
 
@@ -363,8 +363,8 @@ func TestSyncLocking(t *testing.T) {
 		}
 	}
 
-	receive := func() {
-		for range jobsChan {
+	receive := func(ch <-chan int) {
+		for range ch {
 		}
 	}
 
@@ -380,7 +380,7 @@ func TestSyncLocking(t *testing.T) {
 		close(jobsChan)
 	}()
 
-	receive()
+	receive(jobsChan)
 	fmt.Println("total", total) // Output: Always 30
 	assert.Equal(t, 30, total)
 }
