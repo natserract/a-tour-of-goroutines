@@ -7,19 +7,19 @@ import (
 )
 
 type Branch struct {
-	name     string
-	isMaster bool
+	Name     string
+	IsMaster bool
 }
 
 type Merge struct {
-	mergeTo   *Branch
-	mergeFrom *Branch
-	approved  bool
+	To       *Branch
+	From     *Branch
+	Approved bool
 }
 
 type PullRequest struct {
-	actor  string
-	branch Branch
+	Actor  string
+	Branch Branch
 }
 
 type Work struct {
@@ -59,23 +59,22 @@ func (g *Git) mergeByOwner(wg *sync.WaitGroup, m chan<- *Merge, p <-chan *PullRe
 
 	// Check PR
 	time.Sleep(2 * time.Second) // time processed
-
 	pr := <-p
-	if pr.actor != "" {
-		fmt.Println("PR from: ", pr.actor, " processed")
+	if pr.Actor != "" {
+		fmt.Println("PR from: ", pr.Actor, " processed")
 
 		// Only owner can merge to master
 		time.Sleep(2 * time.Second) // time processed
 		m <- &Merge{
-			mergeTo: &Branch{
-				name:     "Master",
-				isMaster: true,
+			To: &Branch{
+				Name:     "Master",
+				IsMaster: true,
 			},
-			mergeFrom: &pr.branch,
-			approved:  true,
+			From:     &pr.Branch,
+			Approved: true,
 		}
 
-		fmt.Println("PR merged from: ", pr.branch.name, "to: Master ")
+		fmt.Println("PR merged from: ", pr.Branch.Name, "to: Master ")
 	}
 }
 
@@ -87,15 +86,15 @@ func (g *Git) pullRequest(wg *sync.WaitGroup, m <-chan *Merge, p chan<- *PullReq
 	// Any PR will requested to owner
 	fmt.Println("PR requested")
 	p <- &PullRequest{
-		actor: "Contributor",
-		branch: Branch{
-			name: "Feature",
+		Actor: "Contributor",
+		Branch: Branch{
+			Name: "Feature",
 		},
 	}
 
-	// Check merged request
+	// Check merged request has been merged
 	merged := <-m
-	if merged.approved {
+	if merged.Approved {
 		fmt.Println("PR succesfully merged")
 	}
 }
