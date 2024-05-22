@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"goroutines/git"
+
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/sync/errgroup"
 )
@@ -190,6 +192,13 @@ func TestChannelDirection(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		undirectionReceiveChan <- i
 	}
+}
+
+func TestGitUseCaseExample(t *testing.T) {
+	fmt.Println("------------------- TestGitUseCaseExample -------------------")
+
+	git := git.New()
+	git.Run()
 }
 
 func TestChannelUnbuffered(t *testing.T) {
