@@ -2,6 +2,10 @@
 
 Deep dive into goroutines
 
+## Related files:
+
+- [main_test.go](main_test.go)
+
 ## Run Server
 
 ```sh
