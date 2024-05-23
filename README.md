@@ -2,10 +2,11 @@
 
 Deep dive into goroutines
 
-## Requirements
+## Run Server
 
-1. Install go-migrate
-2. Install vegeta
+```sh
+make dev
+```
 
 ## Run test:
 

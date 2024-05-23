@@ -70,5 +70,4 @@ func main() {
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("HTTP server error: %s\n", err)
 	}
-
 }
